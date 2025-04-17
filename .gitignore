@@ -1,0 +1,7 @@
+backend/mongodb_data/
+backend/venv/
+backend/fastapi.log
+*.env
+backend/src/__pycache__/
+__pycache__/
+frontend/node_modules/
