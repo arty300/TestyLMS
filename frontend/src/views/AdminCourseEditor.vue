@@ -1,63 +1,65 @@
 <template>
-  <div class="container mx-auto p-4">
-    <h2 class="text-2xl font-bold mb-4">{{ isEditing ? 'Edit Course' : 'Create Course' }}</h2>
-    <div v-if="error" class="text-red-600 mb-4">{{ error }}</div>
-    <form @submit.prevent="saveCourse">
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-1">Title</label>
+  <div class="container mx-auto p-6 bg-gray-50 min-h-screen">
+    <h2 class="text-3xl font-extrabold text-gray-900 mb-6">{{ isEditing ? 'Редактировать курс' : 'Создать курс' }}</h2>
+    <div v-if="error" class="text-red-600 mb-4 p-3 bg-red-100 rounded-md">{{ error }}</div>
+    <form @submit.prevent="saveCourse" class="space-y-6">
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Название</label>
         <input
           v-model="form.title"
           type="text"
-          class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600"
-          placeholder="Enter course title"
+          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          placeholder="Введите название курса"
           required
         />
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-1">Description</label>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Описание</label>
         <textarea
           v-model="form.description"
-          class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600"
-          placeholder="Enter course description"
+          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          placeholder="Введите описание курса"
           rows="4"
           required
         ></textarea>
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-1">Content (Markdown)</label>
-        <textarea ref="editor" class="w-full border rounded"></textarea>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Содержимое (Markdown)</label>
+        <textarea ref="editor" class="w-full border border-gray-300 rounded-md"></textarea>
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-1">Allowed Groups (comma-separated)</label>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Разрешенные группы (через запятую)</label>
         <input
           v-model="form.allowedGroups"
           type="text"
-          class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600"
-          placeholder="e.g., group1,group2"
+          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          placeholder="например, group1,group2"
         />
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-1">Upload .docx (Optional)</label>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Загрузить .docx (опционально)</label>
         <input
           type="file"
           @change="uploadFile"
           accept=".docx"
-          class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+          class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700 transition duration-200"
         />
       </div>
-      <button
-        type="submit"
-        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-      >
-        {{ isEditing ? 'Update Course' : 'Create Course' }}
-      </button>
-      <button
-        type="button"
-        @click="$router.push('/admin/panel')"
-        class="ml-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-      >
-        Cancel
-      </button>
+      <div class="flex space-x-4">
+        <button
+          type="submit"
+          class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-200"
+        >
+          {{ isEditing ? 'Обновить курс' : 'Создать курс' }}
+        </button>
+        <button
+          type="button"
+          @click="$router.push('/admin/panel')"
+          class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
+        >
+          Отмена
+        </button>
+      </div>
     </form>
   </div>
 </template>
@@ -76,6 +78,7 @@ export default {
         description: '',
         content: '',
         allowedGroups: '',
+        hiddenSections: [],
       },
       isEditing: false,
       editingCourseId: null,
@@ -102,8 +105,13 @@ export default {
             name: 'image',
             action: this.uploadImage,
             className: 'fa fa-picture-o',
-            title: 'Upload Image',
-          }, 'table', '|',
+            title: 'Загрузить изображение',
+          }, 'table', {
+            name: 'hideSection',
+            action: this.hideSection,
+            className: 'fa fa-lock',
+            title: 'Скрыть раздел со стоимостью',
+          }, '|',
           'preview', 'side-by-side', 'fullscreen', '|',
           'guide'
         ],
@@ -118,7 +126,7 @@ export default {
       console.log('EasyMDE initialized')
     } catch (error) {
       console.error('Failed to initialize EasyMDE:', error)
-      this.error = 'Failed to initialize editor.'
+      this.error = 'Не удалось инициализировать редактор.'
     }
   },
   methods: {
@@ -135,32 +143,37 @@ export default {
         this.form.description = data.description
         this.form.content = data.content
         this.form.allowedGroups = data.allowedGroups ? data.allowedGroups.join(',') : ''
+        this.form.hiddenSections = data.hiddenSections || []
         if (this.editor) {
           this.editor.value(data.content)
         }
         this.error = null
       } catch (error) {
         console.error('Failed to load course:', error.response || error)
-        this.error = `Failed to load course: ${
-          error.response?.data?.detail || error.message || 'Unknown error'
+        this.error = `Не удалось загрузить курс: ${
+          error.response?.data?.detail || error.message || 'Неизвестная ошибка'
         }`
       }
     },
     async saveCourse() {
       if (!this.form.title.trim() || !this.form.description.trim()) {
-        this.error = 'Title and description are required.'
+        this.error = 'Название и описание обязательны.'
         return
       }
       const token = localStorage.getItem('token')
       if (!token) {
-        this.error = 'No authorization token found.'
+        this.error = 'Токен авторизации не найден.'
         return
       }
       const content = this.editor ? this.editor.value() : this.form.content
       if (!content) {
-        this.error = 'Content cannot be empty.'
+        this.error = 'Содержимое не может быть пустым.'
         return
       }
+      const hiddenSections = this.form.hiddenSections.map(section => ({
+        content: section.content,
+        cost: section.cost
+      }));
       const payload = {
         title: this.form.title,
         description: this.form.description,
@@ -169,7 +182,7 @@ export default {
         allowedGroups: this.form.allowedGroups
           ? this.form.allowedGroups.split(',').map(g => g.trim()).filter(g => g)
           : [],
-        hiddenSections: [],
+        hiddenSections: hiddenSections,
       }
       try {
         if (this.isEditing) {
@@ -179,7 +192,7 @@ export default {
             payload,
             { headers: { Authorization: `Bearer ${token}` } }
           )
-          alert('Course updated successfully!')
+          alert('Курс успешно обновлен!')
         } else {
           console.log('Creating course:', payload)
           await axios.post(
@@ -187,13 +200,13 @@ export default {
             payload,
             { headers: { Authorization: `Bearer ${token}` } }
           )
-          alert('Course created successfully!')
+          alert('Курс успешно создан!')
         }
         this.$router.push('/admin/panel')
       } catch (error) {
         console.error('Failed to save course:', error.response || error)
-        this.error = `Failed to save course: ${
-          error.response?.data?.detail || error.message || 'Unknown error'
+        this.error = `Не удалось сохранить курс: ${
+          error.response?.data?.detail || error.message || 'Неизвестная ошибка'
         }`
       }
     },
@@ -204,7 +217,7 @@ export default {
       formData.append('file', file)
       const token = localStorage.getItem('token')
       if (!token) {
-        this.error = 'No authorization token found.'
+        this.error = 'Токен авторизации не найден.'
         return
       }
       try {
@@ -218,8 +231,8 @@ export default {
         this.error = null
       } catch (error) {
         console.error('Failed to upload file:', error.response || error)
-        this.error = `Failed to upload file: ${
-          error.response?.data?.detail || error.message || 'Unknown error'
+        this.error = `Не удалось загрузить файл: ${
+          error.response?.data?.detail || error.message || 'Неизвестная ошибка'
         }`
       }
     },
@@ -249,12 +262,37 @@ export default {
           this.error = null
         } catch (error) {
           console.error('Failed to upload image:', error.response || error)
-          this.error = `Failed to upload image: ${
-            error.response?.data?.detail || error.message || 'Unknown error'
+          this.error = `Не удалось загрузить изображение: ${
+            error.response?.data?.detail || error.message || 'Неизвестная ошибка'
           }`
         }
       }
       input.click()
+    },
+    hideSection(editor) {
+      const cm = editor.codemirror;
+      const selectedText = cm.getSelection();
+      if (!selectedText) {
+        alert('Пожалуйста, выделите текст или изображение для скрытия.');
+        return;
+      }
+      const cost = prompt('Введите стоимость разблокировки в баллах:', '10');
+      if (cost === null) return; // Отмена
+      const costNum = parseInt(cost);
+      if (isNaN(costNum) || costNum <= 0) {
+        alert('Пожалуйста, введите корректное число баллов.');
+        return;
+      }
+      const sectionId = `hidden-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const placeholder = `[[HIDDEN SECTION: ${sectionId} | Cost: ${costNum} points]]`;
+      cm.replaceSelection(placeholder);
+      this.form.hiddenSections.push({
+        content: selectedText,
+        cost: costNum,
+        placeholder: placeholder,
+        sectionId: sectionId
+      });
+      console.log('Hidden section added:', this.form.hiddenSections);
     },
   },
   beforeDestroy() {
@@ -270,28 +308,7 @@ export default {
 .container {
   max-width: 1200px;
 }
-.mb-4 {
-  margin-bottom: 1rem;
-}
-.block {
-  display: block;
-}
-.text-gray-700 {
-  color: #374151;
-}
-.w-full {
-  width: 100%;
-}
-.p-2 {
-  padding: 0.5rem;
-}
-.border {
-  border: 1px solid #e5e7eb;
-}
-.rounded {
-  border-radius: 0.25rem;
-}
-.transition-colors {
-  transition: color 0.3s ease, background-color 0.3s ease;
+.transition {
+  transition: all 0.3s ease;
 }
 </style>

@@ -2,9 +2,9 @@ from pydantic import BaseModel
 from typing import List
 
 class HiddenSection(BaseModel):
-    content: str
-    cost: int
-    isUnlocked: bool = False
+    content: str  # Содержимое скрытого раздела (Markdown)
+    cost: int     # Стоимость разблокировки в баллах
+    isUnlocked: bool = False  # Флаг, разблокирован ли раздел (для конкретного пользователя будет переопределяться)
 
 class CourseBase(BaseModel):
     title: str

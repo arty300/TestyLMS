@@ -17,11 +17,16 @@ class User(UserBase):
     points: int = 0
     role: str = "student"
     groups: List[str] = []
+    unlockedSections: dict = {}  # Формат: {"course_id": [index1, index2, ...]}
 
     class Config:
         from_attributes = True
 
 class Group(BaseModel):
+    id: str | None = None
     name: str
     users: List[str] = []
     allowedCourses: List[str] = []
+
+    class Config:
+        from_attributes = True
